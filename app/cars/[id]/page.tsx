@@ -6,3 +6,6 @@ export default async function UserPage({
     const { id } = await params;
     return <h1>User ID: {id}</h1>;
 }
+
+
+
