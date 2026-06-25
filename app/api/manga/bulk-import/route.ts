@@ -21,20 +21,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract user ID from profile URL
-    // Format: https://weebcentral.com/users/{USER_ID}/profiles
-    const userIdMatch = profileUrl.match(/\/users\/([^\/]+)/);
-    if (!userIdMatch) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid profile URL. Expected format: https://weebcentral.com/users/{USER_ID}/profiles",
-        },
-        { status: 400 }
-      );
-    }
+    // Extract user ID from profile URL or use directly if it's just a username
+    // Accepts either:
+    // - Full URL: https://weebcentral.com/users/{USER_ID}/profiles
+    // - Just the user ID: KQOUqMcPfQcB9guqwmj6K2m8mci1
+    let userId: string;
 
-    const userId = userIdMatch[1];
+    if (profileUrl.includes('/')) {
+      // It's a URL, extract the user ID
+      const userIdMatch = profileUrl.match(/\/users\/([^\/]+)/);
+      if (!userIdMatch) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Invalid profile URL. Expected format: https://weebcentral.com/users/{USER_ID}/profiles or just the user ID",
+          },
+          { status: 400 }
+        );
+      }
+      userId = userIdMatch[1];
+    } else {
+      // It's just the user ID
+      userId = profileUrl.trim();
+    }
 
     // Get user's subscriptions
     const scraper = new WeebCentralScraper();

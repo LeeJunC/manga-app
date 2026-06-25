@@ -206,7 +206,7 @@ export default function Home() {
                   type="text"
                   value={profileUrl}
                   onChange={(e) => setProfileUrl(e.target.value)}
-                  placeholder="Paste WeebCentral profile URL (e.g., https://weebcentral.com/users/...)"
+                  placeholder="Paste username or profile URL (e.g., KQOUqMcPfQcB9guqwmj6K2m8mci1)"
                   className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
                 <button
