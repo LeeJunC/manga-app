@@ -29,19 +29,15 @@ export class MangaDexScraper implements IScraper {
     await this.rateLimiter.wait();
 
     const url = `${this.baseUrl}/manga`;
-    const params = new URLSearchParams({
-      title: query,
-      limit: '20',
-      'includes[]': 'cover_art',
-    });
-
-    // Add multiple contentRating values
-    params.append('contentRating[]', 'safe');
-    params.append('contentRating[]', 'suggestive');
-    params.append('contentRating[]', 'erotica');
 
     try {
-      const data = await makeRequest<any>(`${url}?${params.toString()}`, {
+      const data = await makeRequest<any>(url, {
+        params: {
+          title: query,
+          limit: 20,
+          'includes[]': 'cover_art',
+          'contentRating[]': ['safe', 'suggestive', 'erotica'],
+        },
         retries: this.config.retries,
         timeout: this.config.timeout,
       });
