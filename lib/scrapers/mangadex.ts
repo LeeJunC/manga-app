@@ -28,16 +28,11 @@ export class MangaDexScraper implements IScraper {
   async searchManga(query: string): Promise<SearchResult[]> {
     await this.rateLimiter.wait();
 
-    const url = `${this.baseUrl}/manga`;
+    // Use simple query params that we know work
+    const url = `${this.baseUrl}/manga?title=${encodeURIComponent(query)}&limit=20`;
 
     try {
       const data = await makeRequest<any>(url, {
-        params: {
-          title: query,
-          limit: 20,
-          'includes[]': 'cover_art',
-          'contentRating[]': ['safe', 'suggestive', 'erotica'],
-        },
         retries: this.config.retries,
         timeout: this.config.timeout,
       });
