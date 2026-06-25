@@ -25,6 +25,108 @@ export class WeebCentralScraper implements IScraper {
   }
 
   /**
+   * Get user's subscriptions from their public profile
+   */
+  async getUserSubscriptions(userId: string): Promise<SearchResult[]> {
+    await this.rateLimiter.wait();
+
+    try {
+      // WeebCentral profile URL with subscriptions tab
+      const profileUrl = `${this.baseUrl}/users/${userId}/profiles`;
+
+      const html = await makeRequest<string>(profileUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
+        },
+        retries: this.config.retries,
+        timeout: this.config.timeout,
+      });
+
+      return this.parseProfileSubscriptions(html);
+    } catch (error) {
+      console.error(`WeebCentral profile scrape error for userId "${userId}":`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Parse subscriptions from user profile page
+   */
+  private parseProfileSubscriptions(html: string): SearchResult[] {
+    const $ = cheerio.load(html);
+    const results: SearchResult[] = [];
+
+    // Look for manga cards/links in the subscriptions section
+    // Try multiple selectors that might contain subscription links
+    const selectors = [
+      'a[href*="/series/"]',  // Any link containing /series/
+      '.subscription-item a',
+      '.manga-card a',
+      'img[alt*="cover"]',     // Images with "cover" in alt
+    ];
+
+    const foundLinks = new Set<string>();
+
+    for (const selector of selectors) {
+      $(selector).each((_, element) => {
+        try {
+          const $el = $(element);
+          let href = $el.attr('href');
+
+          // If it's an img, get the parent link
+          if (!href && element.name === 'img') {
+            href = $el.parent('a').attr('href');
+          }
+
+          if (!href || !href.includes('/series/')) return;
+
+          // Avoid duplicates
+          if (foundLinks.has(href)) return;
+          foundLinks.add(href);
+
+          // Extract series ID from URL: /series/{ID}/{SLUG}
+          const urlMatch = href.match(/\/series\/([^\/]+)(?:\/([^\/]+))?/);
+          if (!urlMatch) return;
+
+          const sourceId = urlMatch[1];
+          const slug = urlMatch[2] || '';
+
+          // Try to find title - could be in alt text, title attr, or link text
+          const title =
+            $el.attr('alt') ||
+            $el.attr('title') ||
+            $el.text().trim() ||
+            slug.replace(/-/g, ' ');
+
+          // Try to find cover image
+          let coverImage: string | undefined;
+          if (element.name === 'img') {
+            coverImage = $el.attr('src') || $el.attr('srcset');
+          } else {
+            const img = $el.find('img').first();
+            coverImage = img.attr('src') || img.attr('srcset');
+          }
+
+          if (sourceId) {
+            results.push({
+              sourceId,
+              title: title || 'Unknown Title',
+              coverImage,
+              sourceUrl: href.startsWith('http') ? href : `${this.baseUrl}${href}`,
+            });
+          }
+        } catch (err) {
+          console.error('Error parsing subscription item:', err);
+        }
+      });
+
+      if (results.length > 0) break; // Found results with this selector
+    }
+
+    return results;
+  }
+
+  /**
    * Search for manga by title
    */
   async searchManga(query: string): Promise<SearchResult[]> {

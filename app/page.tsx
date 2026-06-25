@@ -33,6 +33,9 @@ export default function Home() {
   const [searching, setSearching] = useState(false);
   const [importing, setImporting] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [profileUrl, setProfileUrl] = useState('');
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   useEffect(() => {
     fetchLibrary();
@@ -107,6 +110,34 @@ export default function Home() {
     }
   };
 
+  const handleBulkImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileUrl.trim()) return;
+
+    setBulkImporting(true);
+    try {
+      const response = await fetch('/api/manga/bulk-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileUrl }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(`✅ Successfully imported ${data.imported} out of ${data.total} manga!`);
+        setProfileUrl('');
+        setShowBulkImport(false);
+        await fetchLibrary();
+      } else {
+        alert(`❌ Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert('❌ Failed to bulk import manga');
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -135,7 +166,7 @@ export default function Home() {
         </div>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearch} className="max-w-4xl mx-auto mb-8">
+        <form onSubmit={handleSearch} className="max-w-4xl mx-auto mb-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
             <div className="flex flex-col md:flex-row gap-3">
               <input
@@ -158,6 +189,40 @@ export default function Home() {
             </div>
           </div>
         </form>
+
+        {/* Bulk Import */}
+        <div className="max-w-4xl mx-auto mb-8">
+          <button
+            onClick={() => setShowBulkImport(!showBulkImport)}
+            className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium text-sm mb-3"
+          >
+            {showBulkImport ? '▼' : '▶'} Import from WeebCentral Profile
+          </button>
+
+          {showBulkImport && (
+            <form onSubmit={handleBulkImport} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
+              <div className="flex flex-col md:flex-row gap-3">
+                <input
+                  type="text"
+                  value={profileUrl}
+                  onChange={(e) => setProfileUrl(e.target.value)}
+                  placeholder="Paste WeebCentral profile URL (e.g., https://weebcentral.com/users/...)"
+                  className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button
+                  type="submit"
+                  disabled={bulkImporting}
+                  className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors whitespace-nowrap"
+                >
+                  {bulkImporting ? '📥 Importing...' : '📥 Bulk Import'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                Note: User's subscriptions must be public to import
+              </p>
+            </form>
+          )}
+        </div>
 
         {/* Search Results */}
         {searchResults.length > 0 && (
