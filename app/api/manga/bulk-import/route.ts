@@ -40,6 +40,17 @@ export async function POST(request: NextRequest) {
         );
       }
       userId = userIdMatch[1];
+
+      // Check if user tried to use the /me/ URL (only works when logged in)
+      if (userId === 'me') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Cannot use '/users/me/profiles' URL. You need your actual user ID. Right-click your profile page, select 'View Page Source', and search for 'userId' or 'profileId' to find your real ID.",
+          },
+          { status: 400 }
+        );
+      }
     } else {
       // It's just the user ID
       userId = profileUrl.trim();

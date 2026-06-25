@@ -218,7 +218,7 @@ export default function Home() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Tip: Go to your WeebCentral profile and copy the URL from your browser. The display name (e.g. &quot;dude7&quot;) won&apos;t work &mdash; we need the full URL. Profile must be public.
+                ⚠️ The URL shows &quot;/users/me/&quot; when you&apos;re logged in. We need your actual user ID instead. To find it: Right-click your profile → View Page Source → Search (Ctrl+F) for &quot;userId&quot; or ask a friend to visit your public profile and copy the URL.
               </p>
             </form>
           )}
