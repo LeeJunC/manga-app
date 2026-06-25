@@ -33,12 +33,12 @@ export class MangaDexScraper implements IScraper {
       title: query,
       limit: '20',
       'includes[]': 'cover_art',
-      'order[relevance]': 'desc',
     });
 
     // Add multiple contentRating values
     params.append('contentRating[]', 'safe');
     params.append('contentRating[]', 'suggestive');
+    params.append('contentRating[]', 'erotica');
 
     try {
       const data = await makeRequest<any>(`${url}?${params.toString()}`, {
