@@ -27,7 +27,7 @@ interface Manga {
 
 export default function Home() {
   const [query, setQuery] = useState('');
-  const [source, setSource] = useState<'mangadex' | 'weebcentral'>('mangadex');
+  const [source, setSource] = useState<'weebcentral'>('weebcentral');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [library, setLibrary] = useState<Manga[]>([]);
   const [searching, setSearching] = useState(false);
@@ -135,14 +135,9 @@ export default function Home() {
                 placeholder="Search for manga to add to your library..."
                 className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
-              <select
-                value={source}
-                onChange={(e) => setSource(e.target.value as any)}
-                className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="mangadex">MangaDex</option>
-                <option value="weebcentral">WeebCentral</option>
-              </select>
+              <div className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white flex items-center">
+                <span className="text-sm font-medium">Source: WeebCentral</span>
+              </div>
               <button
                 type="submit"
                 disabled={searching}
