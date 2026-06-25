@@ -206,7 +206,7 @@ export default function Home() {
                   type="text"
                   value={profileUrl}
                   onChange={(e) => setProfileUrl(e.target.value)}
-                  placeholder="Paste username or profile URL (e.g., KQOUqMcPfQcB9guqwmj6K2m8mci1)"
+                  placeholder="Paste profile URL (https://weebcentral.com/users/.../profiles)"
                   className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
                 <button
@@ -218,7 +218,7 @@ export default function Home() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Note: User's subscriptions must be public to import
+                Tip: Go to your WeebCentral profile and copy the URL from your browser. The display name (e.g. &quot;dude7&quot;) won&apos;t work &mdash; we need the full URL. Profile must be public.
               </p>
             </form>
           )}
