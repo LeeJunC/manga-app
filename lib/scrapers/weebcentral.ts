@@ -31,10 +31,15 @@ export class WeebCentralScraper implements IScraper {
     await this.rateLimiter.wait();
 
     try {
-      // Common search URL patterns for manga sites
-      const searchUrl = `${this.baseUrl}/search`;
+      // WeebCentral search API endpoint
+      const searchUrl = `${this.baseUrl}/search/simple?location=main`;
+
       const html = await makeRequest<string>(searchUrl, {
-        params: { q: query },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        data: `text=${encodeURIComponent(query)}`,
         retries: this.config.retries,
         timeout: this.config.timeout,
       });
@@ -42,18 +47,7 @@ export class WeebCentralScraper implements IScraper {
       return this.parseSearchResults(html);
     } catch (error) {
       console.error(`WeebCentral search error for "${query}":`, error);
-      // Fallback: try alternative search patterns
-      try {
-        const altSearchUrl = `${this.baseUrl}/?s=${encodeURIComponent(query)}`;
-        const html = await makeRequest<string>(altSearchUrl, {
-          retries: this.config.retries,
-          timeout: this.config.timeout,
-        });
-        return this.parseSearchResults(html);
-      } catch (altError) {
-        console.error("WeebCentral alternative search also failed:", altError);
-        return [];
-      }
+      return [];
     }
   }
 
@@ -142,51 +136,39 @@ export class WeebCentralScraper implements IScraper {
     const $ = cheerio.load(html);
     const results: SearchResult[] = [];
 
-    // Common selectors for manga listings
-    const selectors = [
-      ".manga-item",
-      ".search-result",
-      ".manga-list-item",
-      ".item",
-      ".post",
-      "article",
-    ];
+    // WeebCentral specific: results are <a> tags inside #quick-search-result
+    $('#quick-search-result a').each((_, element) => {
+      try {
+        const $el = $(element);
+        const href = $el.attr('href');
 
-    for (const selector of selectors) {
-      const items = $(selector);
-      if (items.length > 0) {
-        items.each((_, element) => {
-          try {
-            const $el = $(element);
+        if (!href) return;
 
-            // Try to find title and link
-            const link = $el.find("a").first();
-            const href = link.attr("href");
-            const title = link.attr("title") || link.text().trim();
+        // Extract title from the text div
+        const title = $el.find('div.flex-1').text().trim();
 
-            // Try to find cover image
-            const img = $el.find("img").first();
-            const coverImage = img.attr("src") || img.attr("data-src");
+        // Extract cover image from picture > source or img
+        const coverSrcset = $el.find('picture source').attr('srcset');
+        const coverImg = $el.find('picture img').attr('src');
+        const coverImage = coverSrcset || coverImg;
 
-            if (href && title) {
-              const sourceId = this.extractMangaId(href);
-              results.push({
-                sourceId,
-                title,
-                coverImage: coverImage
-                  ? this.normalizeUrl(coverImage)
-                  : undefined,
-                sourceUrl: this.normalizeUrl(href),
-              });
-            }
-          } catch (err) {
-            // Skip invalid items
-          }
-        });
+        // Extract series ID from URL: /series/{ID}/{SLUG}
+        const urlMatch = href.match(/\/series\/([^\/]+)\//);
+        const sourceId = urlMatch ? urlMatch[1] : this.extractMangaId(href);
 
-        if (results.length > 0) break;
+        if (title && href) {
+          results.push({
+            sourceId,
+            title,
+            coverImage: coverImage || undefined,
+            sourceUrl: href,
+          });
+        }
+      } catch (err) {
+        // Skip invalid items
+        console.error('Error parsing search result:', err);
       }
-    }
+    });
 
     return results;
   }
