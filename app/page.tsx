@@ -78,10 +78,20 @@ export default function Home() {
   const handleImport = async (sourceId: string) => {
     setImporting(sourceId);
     try {
+      // Find the manga in search results to get its data
+      const manga = searchResults.find(r => r.sourceId === sourceId);
+
       const response = await fetch('/api/manga/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, sourceId }),
+        body: JSON.stringify({
+          source,
+          sourceId,
+          // Pass the data we already have from search
+          title: manga?.title,
+          coverImage: manga?.coverImage,
+          sourceUrl: manga?.sourceUrl,
+        }),
       });
 
       const data = await response.json();

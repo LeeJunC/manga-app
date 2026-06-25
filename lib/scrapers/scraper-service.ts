@@ -71,7 +71,49 @@ export class ScraperService {
   }
 
   /**
-   * Import manga from a source into the database
+   * Import manga from search result data (quick import without scraping detail page)
+   */
+  async importMangaFromSearch(
+    source: SourceName,
+    sourceId: string,
+    title: string,
+    coverImage?: string,
+    sourceUrl?: string
+  ): Promise<IManga> {
+    await connectDB();
+
+    // Check if manga already exists with this source
+    let existingManga = await Manga.findOne({
+      "sources.name": source,
+      "sources.id": sourceId,
+    });
+
+    if (existingManga) {
+      // Update existing manga with any new data
+      if (title) existingManga.title = title;
+      if (coverImage) existingManga.coverImage = coverImage;
+      await existingManga.save();
+      return existingManga;
+    }
+
+    // Create new manga entry with data from search
+    const newManga = await Manga.create({
+      title: title || "Unknown Title",
+      coverImage: coverImage,
+      sources: [
+        {
+          name: source,
+          id: sourceId,
+          url: sourceUrl || `https://weebcentral.com/series/${sourceId}`,
+        },
+      ],
+    });
+
+    return newManga;
+  }
+
+  /**
+   * Import manga from a source into the database (full scraping)
    */
   async importManga(source: SourceName, sourceId: string): Promise<IManga> {
     await connectDB();
