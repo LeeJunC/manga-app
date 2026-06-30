@@ -241,15 +241,17 @@ export default function Home() {
                   <textarea
                     value={pastedHtml}
                     onChange={(e) => setPastedHtml(e.target.value)}
-                    placeholder="Paste the page source from your WeebCentral profile here..."
+                    placeholder="Paste the copied HTML (outerHTML) from your WeebCentral profile's Inspect panel here..."
                     rows={5}
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-xs"
                   />
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 space-y-1">
-                    <p className="font-semibold text-gray-700 dark:text-gray-300">How to get your page source:</p>
+                    <p className="font-semibold text-gray-700 dark:text-gray-300">How to copy your subscriptions:</p>
                     <p>1. Go to your WeebCentral profile (while logged in)</p>
-                    <p>2. Right-click anywhere → &quot;View Page Source&quot; (or press Ctrl+U / Cmd+Option+U)</p>
-                    <p>3. Select all (Ctrl+A / Cmd+A), copy (Ctrl+C / Cmd+C), and paste it above</p>
+                    <p>2. Right-click on the page → &quot;Inspect&quot; (opens DevTools)</p>
+                    <p>3. In the Elements tab, right-click the top &lt;html&gt; tag → &quot;Copy&quot; → &quot;Copy outerHTML&quot;</p>
+                    <p>4. Paste it above (Ctrl+V / Cmd+V)</p>
+                    <p className="text-amber-600 dark:text-amber-400">⚠️ Use &quot;Inspect&quot;, NOT &quot;View Page Source&quot; — the subscriptions are loaded by JavaScript and only show up in Inspect.</p>
                     <p className="text-purple-600 dark:text-purple-400">✓ Works with the &quot;/users/me/&quot; page — no user ID needed!</p>
                   </div>
                 </>
