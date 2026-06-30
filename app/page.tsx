@@ -36,6 +36,8 @@ export default function Home() {
   const [bulkImporting, setBulkImporting] = useState(false);
   const [profileUrl, setProfileUrl] = useState('');
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkMode, setBulkMode] = useState<'html' | 'url'>('html');
+  const [pastedHtml, setPastedHtml] = useState('');
 
   useEffect(() => {
     fetchLibrary();
@@ -112,20 +114,27 @@ export default function Home() {
 
   const handleBulkImport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profileUrl.trim()) return;
+
+    const payload =
+      bulkMode === 'html'
+        ? { html: pastedHtml }
+        : { profileUrl };
+
+    if (bulkMode === 'html' ? !pastedHtml.trim() : !profileUrl.trim()) return;
 
     setBulkImporting(true);
     try {
       const response = await fetch('/api/manga/bulk-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileUrl }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
       if (data.success) {
         alert(`✅ Successfully imported ${data.imported} out of ${data.total} manga!`);
         setProfileUrl('');
+        setPastedHtml('');
         setShowBulkImport(false);
         await fetchLibrary();
       } else {
@@ -201,25 +210,71 @@ export default function Home() {
 
           {showBulkImport && (
             <form onSubmit={handleBulkImport} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
-              <div className="flex flex-col md:flex-row gap-3">
-                <input
-                  type="text"
-                  value={profileUrl}
-                  onChange={(e) => setProfileUrl(e.target.value)}
-                  placeholder="Paste profile URL (https://weebcentral.com/users/.../profiles)"
-                  className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
+              {/* Mode toggle */}
+              <div className="flex gap-2 mb-4">
                 <button
-                  type="submit"
-                  disabled={bulkImporting}
-                  className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors whitespace-nowrap"
+                  type="button"
+                  onClick={() => setBulkMode('html')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    bulkMode === 'html'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
                 >
-                  {bulkImporting ? '📥 Importing...' : '📥 Bulk Import'}
+                  📋 Paste Page Source (recommended)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkMode('url')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    bulkMode === 'url'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  🔗 Public Profile URL
                 </button>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                ⚠️ The URL shows &quot;/users/me/&quot; when you&apos;re logged in. We need your actual user ID instead. To find it: Right-click your profile → View Page Source → Search (Ctrl+F) for &quot;userId&quot; or ask a friend to visit your public profile and copy the URL.
-              </p>
+
+              {bulkMode === 'html' ? (
+                <>
+                  <textarea
+                    value={pastedHtml}
+                    onChange={(e) => setPastedHtml(e.target.value)}
+                    placeholder="Paste the page source from your WeebCentral profile here..."
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-xs"
+                  />
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 space-y-1">
+                    <p className="font-semibold text-gray-700 dark:text-gray-300">How to get your page source:</p>
+                    <p>1. Go to your WeebCentral profile (while logged in)</p>
+                    <p>2. Right-click anywhere → &quot;View Page Source&quot; (or press Ctrl+U / Cmd+Option+U)</p>
+                    <p>3. Select all (Ctrl+A / Cmd+A), copy (Ctrl+C / Cmd+C), and paste it above</p>
+                    <p className="text-purple-600 dark:text-purple-400">✓ Works with the &quot;/users/me/&quot; page — no user ID needed!</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value={profileUrl}
+                    onChange={(e) => setProfileUrl(e.target.value)}
+                    placeholder="Paste a public profile URL (https://weebcentral.com/users/.../profiles)"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    ⚠️ This needs the actual user ID in the URL (not &quot;/users/me/&quot;) and the profile must be public. If you&apos;re importing your own list, use &quot;Paste Page Source&quot; instead.
+                  </p>
+                </>
+              )}
+
+              <button
+                type="submit"
+                disabled={bulkImporting}
+                className="mt-3 px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors whitespace-nowrap"
+              >
+                {bulkImporting ? '📥 Importing...' : '📥 Bulk Import'}
+              </button>
             </form>
           )}
         </div>

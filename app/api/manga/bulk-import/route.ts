@@ -9,64 +9,79 @@ import { scraperService } from "@/lib/scrapers";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { profileUrl } = body;
+    const { profileUrl, html } = body;
 
-    if (!profileUrl || typeof profileUrl !== "string") {
+    const scraper = new WeebCentralScraper();
+    let subscriptions;
+
+    if (html && typeof html === "string") {
+      // Option A: User pasted the page HTML from their browser's Inspect /
+      // View-Source. Works for logged-in (/users/me/) pages since the
+      // browser already rendered the authenticated content for them.
+      subscriptions = scraper.parseSubscriptionsFromHtml(html);
+
+      if (subscriptions.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "No manga found in the pasted HTML. Make sure you copied the full page source from your WeebCentral profile (the part containing your subscription list).",
+          },
+          { status: 400 }
+        );
+      }
+    } else if (profileUrl && typeof profileUrl === "string") {
+      // Option B: User provided a public profile URL (or bare user ID)
+      // and we fetch + scrape it ourselves.
+      let userId: string;
+
+      if (profileUrl.includes('/')) {
+        // It's a URL, extract the user ID
+        const userIdMatch = profileUrl.match(/\/users\/([^\/]+)/);
+        if (!userIdMatch) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Invalid profile URL. Expected format: https://weebcentral.com/users/{USER_ID}/profiles or just the user ID",
+            },
+            { status: 400 }
+          );
+        }
+        userId = userIdMatch[1];
+
+        // Check if user tried to use the /me/ URL (only works when logged in)
+        if (userId === 'me') {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Cannot use '/users/me/profiles' URL. Use the 'Paste HTML' option instead, or provide your actual user ID.",
+            },
+            { status: 400 }
+          );
+        }
+      } else {
+        // It's just the user ID
+        userId = profileUrl.trim();
+      }
+
+      // Get user's subscriptions by fetching the public profile
+      subscriptions = await scraper.getUserSubscriptions(userId);
+
+      if (subscriptions.length === 0) {
+        return NextResponse.json({
+          success: true,
+          message: "No subscriptions found (profile might be private)",
+          imported: 0,
+          total: 0,
+        });
+      }
+    } else {
       return NextResponse.json(
         {
           success: false,
-          error: "profileUrl parameter is required",
+          error: "Provide either 'profileUrl' or 'html'",
         },
         { status: 400 }
       );
-    }
-
-    // Extract user ID from profile URL or use directly if it's just a username
-    // Accepts either:
-    // - Full URL: https://weebcentral.com/users/{USER_ID}/profiles
-    // - Just the user ID: KQOUqMcPfQcB9guqwmj6K2m8mci1
-    let userId: string;
-
-    if (profileUrl.includes('/')) {
-      // It's a URL, extract the user ID
-      const userIdMatch = profileUrl.match(/\/users\/([^\/]+)/);
-      if (!userIdMatch) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Invalid profile URL. Expected format: https://weebcentral.com/users/{USER_ID}/profiles or just the user ID",
-          },
-          { status: 400 }
-        );
-      }
-      userId = userIdMatch[1];
-
-      // Check if user tried to use the /me/ URL (only works when logged in)
-      if (userId === 'me') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Cannot use '/users/me/profiles' URL. You need your actual user ID. Right-click your profile page, select 'View Page Source', and search for 'userId' or 'profileId' to find your real ID.",
-          },
-          { status: 400 }
-        );
-      }
-    } else {
-      // It's just the user ID
-      userId = profileUrl.trim();
-    }
-
-    // Get user's subscriptions
-    const scraper = new WeebCentralScraper();
-    const subscriptions = await scraper.getUserSubscriptions(userId);
-
-    if (subscriptions.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: "No subscriptions found (profile might be private)",
-        imported: 0,
-        total: 0,
-      });
     }
 
     // Import all subscriptions

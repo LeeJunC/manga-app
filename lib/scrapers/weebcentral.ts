@@ -50,6 +50,15 @@ export class WeebCentralScraper implements IScraper {
   }
 
   /**
+   * Parse subscriptions from raw HTML (e.g. pasted from the browser
+   * Inspect/View-Source of a logged-in profile page). This bypasses the
+   * need for the user's ID or login cookies entirely.
+   */
+  parseSubscriptionsFromHtml(html: string): SearchResult[] {
+    return this.parseProfileSubscriptions(html);
+  }
+
+  /**
    * Parse subscriptions from user profile page
    */
   private parseProfileSubscriptions(html: string): SearchResult[] {
